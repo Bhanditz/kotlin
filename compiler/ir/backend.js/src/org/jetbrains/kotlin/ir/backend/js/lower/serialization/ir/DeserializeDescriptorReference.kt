@@ -15,8 +15,6 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Deserializ
 
 class DescriptorReferenceDeserializer(val currentModule: ModuleDescriptor, val resolvedForwardDeclarations: MutableMap<UniqIdKey, UniqIdKey>) {
 
-    var doCrash: Boolean = true
-
     fun deserializeDescriptorReference(
         proto: IrKlibProtoBuf.DescriptorReference,
         checkerDesc: (DeclarationDescriptor) -> Long?,

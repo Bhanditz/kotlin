@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findFirstFunction
@@ -102,6 +103,11 @@ private val kotlinFqn = FqName("kotlin")
 private val functionalPackages =
     listOf(kotlinFqn, kotlinFqn.child(Name.identifier("coroutines")), kotlinFqn.child(Name.identifier("reflect")))
 
+internal val BUILT_IN_FUNCTION_CLASS_COUNT = 4
+internal val BUILT_IN_FUNCTION_ARITY_COUNT = 256
+internal val BUILT_IN_UNIQ_ID_GAP = 2 * BUILT_IN_FUNCTION_ARITY_COUNT * BUILT_IN_FUNCTION_CLASS_COUNT
+internal val BUILT_IN_UNIQ_ID_CLASS_OFFSET = BUILT_IN_FUNCTION_CLASS_COUNT * BUILT_IN_FUNCTION_ARITY_COUNT
+
 internal fun isBuiltInFunction(value: IrDeclaration): Boolean = when (value) {
     is IrSimpleFunction -> value.name.asString() == "invoke" && (value.parent as? IrClass)?.let { isBuiltInFunction(it) } == true
     is IrClass -> {
@@ -112,12 +118,22 @@ internal fun isBuiltInFunction(value: IrDeclaration): Boolean = when (value) {
 }
 
 
+private fun builtInOffset(function: IrSimpleFunction): Long {
+    val isK = function.parentAsClass.name.asString().startsWith("K")
+    return when {
+        isK && function.isSuspend -> 3
+        isK -> 2
+        function.isSuspend -> 1
+        else -> 0
+    }
+}
+
 internal fun builtInFunctionId(value: IrDeclaration): Long = when (value) {
     is IrSimpleFunction -> {
-        value.run { valueParameters.size + if (isSuspend) 256 else 0 }.toLong()
+        value.run { valueParameters.size + builtInOffset(value) * BUILT_IN_FUNCTION_ARITY_COUNT }.toLong()
     }
     is IrClass -> {
-        256 * 2 + builtInFunctionId(value.declarations.first { it.name.asString() == "invoke" })
+        BUILT_IN_UNIQ_ID_CLASS_OFFSET + builtInFunctionId(value.declarations.first { it.name.asString() == "invoke" })
     }
     else -> error("Only class or function is expected")
 }
@@ -132,12 +148,22 @@ internal fun isBuiltInFunction(value: DeclarationDescriptor): Boolean = when (va
     else -> false
 }
 
+private fun builtInOffset(function: FunctionInvokeDescriptor): Long {
+    val isK = function.containingDeclaration.name.asString().startsWith("K")
+    return when {
+        isK && function.isSuspend -> 3
+        isK -> 2
+        function.isSuspend -> 1
+        else -> 0
+    }
+}
+
 internal fun builtInFunctionId(value: DeclarationDescriptor): Long = when (value) {
     is FunctionInvokeDescriptor -> {
-        value.run { valueParameters.size + if (isSuspend) 256 else 0 }.toLong()
+        value.run { valueParameters.size + builtInOffset(value) * BUILT_IN_FUNCTION_ARITY_COUNT }.toLong()
     }
     is ClassDescriptor -> {
-        256 * 2 + builtInFunctionId(value.findFirstFunction("invoke") { true })
+        BUILT_IN_UNIQ_ID_CLASS_OFFSET + builtInFunctionId(value.findFirstFunction("invoke") { true })
     }
     else -> error("Only class or function is expected")
 }

@@ -1026,6 +1026,9 @@ abstract class IrModuleDeserializer(
         property.setter =
                 if (proto.hasSetter()) deserializeIrFunction(proto.setter, start, end, origin, property) else null
 
+//        property.getter?.let { (it.descriptor as? WrappedSimpleFunctionDescriptor)?.bind(it) }
+//        property.setter?.let { (it.descriptor as? WrappedSimpleFunctionDescriptor)?.bind(it) }
+
         property.getter?.let {
             val descriptor = it.descriptor
             if (descriptor is WrappedSimpleFunctionDescriptor) descriptor.bind(it)

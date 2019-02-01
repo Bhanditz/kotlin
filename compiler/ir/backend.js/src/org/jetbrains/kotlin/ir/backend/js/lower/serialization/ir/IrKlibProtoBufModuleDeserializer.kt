@@ -168,7 +168,7 @@ class IrKlibProtoBufModuleDeserializer(
     override fun deserializeDescriptorReference(proto: IrKlibProtoBuf.DescriptorReference) =
         descriptorReferenceDeserializer.deserializeDescriptorReference(proto, {
             knownBuiltInsDescriptors[it]?.index ?: if (isBuiltInFunction(it)) FUNCTION_INDEX_START + builtInFunctionId(it) else null
-        }, { (FUNCTION_INDEX_START + 256 * 2) <= it && it < (FUNCTION_INDEX_START + 256 * 4) }, {
+        }, { (FUNCTION_INDEX_START + BUILT_IN_UNIQ_ID_CLASS_OFFSET) <= it && it < (FUNCTION_INDEX_START + BUILT_IN_UNIQ_ID_GAP) }, {
             builtIns.builtIns.getBuiltInClassByFqName(it)
         })
 

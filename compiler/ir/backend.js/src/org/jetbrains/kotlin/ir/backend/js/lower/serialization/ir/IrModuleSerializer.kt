@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir
 
 import org.jetbrains.kotlin.backend.common.LoggingContext
+import org.jetbrains.kotlin.backend.common.descriptors.KnownPackageFragmentDescriptor
 import org.jetbrains.kotlin.backend.common.ir.ir2string
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassKind.*
@@ -14,7 +15,10 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.SourceManager
+import org.jetbrains.kotlin.ir.SourceRangeInfo
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionBase
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrBinaryPrimitiveImpl
@@ -22,6 +26,8 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrNullaryPrimitiveImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrUnaryPrimitiveImpl
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.*
+import org.jetbrains.kotlin.js.resolve.JsPlatform.builtIns
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.Variance
 
 internal class IrModuleSerializer(
@@ -344,8 +350,14 @@ internal class IrModuleSerializer(
     private fun serializeCall(call: IrCall): IrKlibProtoBuf.IrCall {
         val proto = IrKlibProtoBuf.IrCall.newBuilder()
 
+        if (call.dispatchReceiver?.type is IrDynamicType) {
+            fun foo() {}
+            foo()
+        }
+
         proto.kind = irCallToPrimitiveKind(call)
         proto.symbol = serializeIrSymbol(call.symbol)
+
 
         call.superQualifierSymbol?.let {
             proto.`super` = serializeIrSymbol(it)
@@ -1050,6 +1062,30 @@ internal class IrModuleSerializer(
         return proto.build()
     }
 
+    private val dynamicPackage = KnownPackageFragmentDescriptor(builtIns.builtInsModule, FqName("kotlin.js.dynamic"))
+    private lateinit var dynamicFile: IrFile
+
+    private fun IrModuleFragment.addSyntheticDynamicFile() {
+        dynamicFile = IrFileImpl(object : SourceManager.FileEntry {
+            override val name = "<dynamicDeclarations>"
+            override val maxOffset = UNDEFINED_OFFSET
+
+            override fun getSourceRangeInfo(beginOffset: Int, endOffset: Int) =
+                SourceRangeInfo(
+                    "",
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET
+                )
+
+            override fun getLineNumber(offset: Int) = UNDEFINED_OFFSET
+            override fun getColumnNumber(offset: Int) = UNDEFINED_OFFSET
+        }, dynamicPackage)
+//        files +=
+    }
 
     fun serializedIrModule(module: IrModuleFragment): SerializedIr {
         val moduleHeader = serializeModule(module).toByteArray()

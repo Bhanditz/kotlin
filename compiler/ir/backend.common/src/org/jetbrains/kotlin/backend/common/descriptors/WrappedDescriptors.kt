@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.types.*
 
 abstract class WrappedDeclarationDescriptor<T : IrDeclaration>(override val annotations: Annotations) : DeclarationDescriptor {
     lateinit var owner: T
-    private var bound = false
+    protected var bound = false
     fun bind(declaration: T) {
         assert(!bound)
         bound = true
@@ -332,6 +332,8 @@ open class WrappedSimpleFunctionDescriptor(
     ): SimpleFunctionDescriptor {
         TODO("not implemented")
     }
+
+    fun isBound() = this.bound
 
     override fun isHiddenForResolutionEverywhereBesideSupercalls(): Boolean {
         TODO("not implemented")

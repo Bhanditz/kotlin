@@ -6,7 +6,9 @@
 package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir
 
 import org.jetbrains.kotlin.backend.common.descriptors.getFunction
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrAnonymousInitializerImpl
@@ -40,7 +42,6 @@ class DeclarationTable(val builtIns: IrBuiltIns, val descriptorTable: Descriptor
     val descriptors = descriptorTable
     private var currentIndex = 0x1_0000_0000L
 
-    private val FUNCTION_BUILT_IN = 2 * 256 + 2 * 256
     private val FUNCTION_INDEX_START: Long
 
     init {
@@ -50,21 +51,7 @@ class DeclarationTable(val builtIns: IrBuiltIns, val descriptorTable: Descriptor
         }
 
         FUNCTION_INDEX_START = currentIndex
-        currentIndex += FUNCTION_BUILT_IN
-//
-//        val invokeName = Name.identifier("invoke")
-//        (0..255).forEach {
-//            symbolTable.referenceSimpleFunction(
-//                builtIns.builtIns.getFunction(it).unsubstitutedMemberScope.getContributedFunctions(
-//                    invokeName, NoLookupLocation.FROM_DESERIALIZATION
-//                ).single()
-//            ).let { d ->
-//                if (d.isBound) {
-//                    table[d.owner] = UniqId(currentIndex, false)
-//                }
-//                ++currentIndex
-//            }
-//        }
+        currentIndex += BUILT_IN_UNIQ_ID_GAP
     }
 
     fun uniqIdByDeclaration(value: IrDeclaration): UniqId {
@@ -80,6 +67,13 @@ class DeclarationTable(val builtIns: IrBuiltIns, val descriptorTable: Descriptor
                     || value is IrAnonymousInitializerImpl
             ) {
 
+                val desc = value.descriptor
+                if (desc is CallableDescriptor) {
+                    if (desc.visibility == Visibilities.PUBLIC || value.origin != IrDeclarationOrigin.FAKE_OVERRIDE) {
+                        fun foo(){}
+                        foo()
+                    }
+                }
                 UniqId(currentIndex++, true)
             } else {
                 UniqId(value.uniqIdIndex, false)
