@@ -112,6 +112,8 @@ private val testFiles = listOf("js/js.translator/testData/box/dynamic/callMethod
 
 private val tests = listOfKtFilesFrom(unimplementedNativeBuiltInsDir.path) + stdlibFiles + testFiles
 
+private val resultJs = "js/js.translator/testData/out/klibs/result.js"
+
 fun main() {
 
     val environment = KotlinCoreEnvironment.createForTests(Disposable { }, CompilerConfiguration(), EnvironmentConfigFiles.JS_CONFIG_FILES)
@@ -136,5 +138,7 @@ fun main() {
         emptyList()
     )
 
-    TODO("Write library into $stdKlibFile")
+    File(resultJs).writeText(result.generatedCode)
+
+//    TODO("Write library into $stdKlibFile")
 }

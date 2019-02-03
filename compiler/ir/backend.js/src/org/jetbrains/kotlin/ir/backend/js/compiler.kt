@@ -51,7 +51,7 @@ import org.jetbrains.kotlin.utils.JsMetadataVersion
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadataUtils
 import java.io.File
 
-data class Result(val moduleDescriptor: ModuleDescriptor, val generatedCode: String, val moduleFragment: IrModuleFragment)
+data class Result(val moduleDescriptor: ModuleDescriptor, val generatedCode: String, val moduleFragment: IrModuleFragment?)
 
 fun compile(
     project: Project,
@@ -219,7 +219,7 @@ fun compile(
             jsPhases.fold(data) { m, p -> phase(p, context, m) }
         }
 
-        return Result(md, context.jsProgram.toString(), context.moduleFragmentCopy)
+        return Result(md, context.jsProgram.toString(), null)
     } else {
 
         val context = JsIrBackendContext(
