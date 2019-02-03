@@ -816,6 +816,8 @@ abstract class IrModuleDeserializer(
         logger.log { "### deserializing IrFunction ${proto.base.name}" }
         val symbol = deserializeIrSymbol(proto.symbol) as IrSimpleFunctionSymbol
 
+        if (symbol.isBound) return symbol.owner
+
         val function = symbolTable.declareSimpleFunction(UNDEFINED_OFFSET, UNDEFINED_OFFSET, irrelevantOrigin,
             symbol.descriptor, {
                 IrFunctionImpl(

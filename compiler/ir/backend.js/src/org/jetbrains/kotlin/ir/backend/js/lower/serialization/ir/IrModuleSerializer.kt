@@ -351,8 +351,13 @@ internal class IrModuleSerializer(
         val proto = IrKlibProtoBuf.IrCall.newBuilder()
 
         if (call.dispatchReceiver?.type is IrDynamicType) {
-            fun foo() {}
-            foo()
+            val declaration = call.symbol.owner
+            dynamicFile.run {
+                if (!declarations.contains(declaration)) {
+                    declaration.parent = dynamicFile
+                    declarations += declaration
+                }
+            }
         }
 
         proto.kind = irCallToPrimitiveKind(call)
@@ -1048,6 +1053,7 @@ internal class IrModuleSerializer(
     fun serializeModule(module: IrModuleFragment): IrKlibProtoBuf.IrModule {
         val proto = IrKlibProtoBuf.IrModule.newBuilder()
             .setName(module.name.toString())
+        module.addSyntheticDynamicFile()
         module.files.forEach {
             proto.addFile(serializeIrFile(it))
         }
@@ -1084,7 +1090,7 @@ internal class IrModuleSerializer(
             override fun getLineNumber(offset: Int) = UNDEFINED_OFFSET
             override fun getColumnNumber(offset: Int) = UNDEFINED_OFFSET
         }, dynamicPackage)
-//        files +=
+        files += dynamicFile
     }
 
     fun serializedIrModule(module: IrModuleFragment): SerializedIr {
